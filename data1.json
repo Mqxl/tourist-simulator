@@ -1,0 +1,227 @@
+{
+    "sellerLines": 5,
+    "events": [
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 0,
+            "customerId": 1
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 3,
+            "customerId": 1,
+            "deskId": 2
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 6,
+            "customerId": 1,
+            "deskId": 2
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 6,
+            "customerId": 2
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 9,
+            "customerId": 2,
+            "deskId": 1
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 12,
+            "customerId": 2,
+            "deskId": 1
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 12,
+            "customerId": 3
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 15,
+            "customerId": 3,
+            "deskId": 1
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 18,
+            "customerId": 3,
+            "deskId": 1
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 18,
+            "customerId": 4
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 21,
+            "customerId": 4,
+            "deskId": 4
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 24,
+            "customerId": 4,
+            "deskId": 4
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 24,
+            "customerId": 5
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 27,
+            "customerId": 5,
+            "deskId": 5
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 30,
+            "customerId": 5,
+            "deskId": 5
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 30,
+            "customerId": 6
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 33,
+            "customerId": 6,
+            "deskId": 1
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 36,
+            "customerId": 6,
+            "deskId": 1
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 36,
+            "customerId": 7
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 39,
+            "customerId": 7,
+            "deskId": 5
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 42,
+            "customerId": 7,
+            "deskId": 5
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 42,
+            "customerId": 8
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 45,
+            "customerId": 8,
+            "deskId": 3
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 48,
+            "customerId": 8,
+            "deskId": 3
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 48,
+            "customerId": 9
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 51,
+            "customerId": 9,
+            "deskId": 3
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 54,
+            "customerId": 9,
+            "deskId": 3
+        },
+        {
+            "event": "CUSTOMER_ARRIVAL",
+            "time": 54,
+            "customerId": 10
+        },
+        {
+            "event": "WALK_TO_DESK",
+            "time": 57,
+            "customerId": 10,
+            "deskId": 4
+        },
+        {
+            "event": "BUY_TICKETS",
+            "time": 60,
+            "customerId": 10,
+            "deskId": 4
+        }
+    ],
+    "desks": [
+        {
+            "num": 1,
+            "x": 100,
+            "y": 200
+        },
+        {
+            "num": 2,
+            "x": 200,
+            "y": 200
+        },
+        {
+            "num": 3,
+            "x": 300,
+            "y": 200
+        },
+        {
+            "num": 4,
+            "x": 400,
+            "y": 200
+        },
+        {
+            "num": 5,
+            "x": 500,
+            "y": 200
+        },
+        {
+            "num": 6,
+            "x": 600,
+            "y": 200
+        },
+        {
+            "num": 7,
+            "x": 700,
+            "y": 200
+        },
+        {
+            "num": 8,
+            "x": 800,
+            "y": 200
+        },
+        {
+            "num": 9,
+            "x": 900,
+            "y": 200
+        },
+        {
+            "num": 10,
+            "x": 1000,
+            "y": 200
+        }
+    ]
+}

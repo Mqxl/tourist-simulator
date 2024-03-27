@@ -11,5 +11,8 @@
         "tabWidth": 4,
         "useTabs": false,
         "printWidth": 150
+    },
+    "dependencies": {
+        "@types/es6-promise": "^3.3.0"
     }
 }
