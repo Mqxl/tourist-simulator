@@ -6,6 +6,7 @@ const GroupPersonIcon = new Image();
 GroupPersonIcon.src = "images/group.gif";
 const IMAGE_WIDTH = 15;
 const IMAGE_HEIGHT = 15;
+let duration = 5
 
 // -------------------------
 //  DEFINITIONS
@@ -47,6 +48,7 @@ const SortAndInjectSequentialIDs = (events: Array<SimEvent>): Array<SimEventWith
     return events.map((e) => Object.assign({ id: id++ }, e) as SimEventWithId);
 };
 
+
 // -------------------------
 //  CANVAS OBJECTS
 // -------------------------
@@ -71,39 +73,67 @@ class Desk {
     }
 }
 
+let waitingDrawn = false;
+let walkToDeskDrawn = false;
 
 class Person {
-    static START_AT: Coords = { x: 100, y: 700 };
+    static START_AT: Coords = { x: 70, y: 700 };
     private deskId: number | null = null;
     private deskX: number = 0;
     private deskY: number = 0;
+    private events: SimEventWithId[]; // Добавленное свойство для хранения событий
+    private currentEventId: number = 0; // Добавленное свойство для хранения текущего идентификатора события
 
-    constructor(private id: number) {}
+    constructor(private id: number, events: SimEventWithId[]) {
+        this.events = events;
+    }
 
-    draw(ctx: CanvasRenderingContext2D, now: number, event: SimEvent) {
+    private getNextEvent(): SimEventWithId | null {
+    const currentEventIndex = this.events.findIndex(event => event.id === this.currentEventId);
+    if (currentEventIndex !== -1 && currentEventIndex < this.events.length - 1) {
+        return this.events[currentEventIndex + 1];
+    } else {
+        return null;
+    }
+}
+
+private getPreviousEvent(): SimEventWithId | null {
+    const currentEventIndex = this.events.findIndex(event => event.id === this.currentEventId);
+    if (currentEventIndex > 0) {
+        return this.events[currentEventIndex - 1];
+    } else {
+        return null;
+    }
+}
+
+    draw(ctx: CanvasRenderingContext2D, now: number, event: SimEvent, id: number) {
         switch (event.event) {
             case "CUSTOMER_ARRIVAL":
                 this.drawArrival(ctx);
+                break;
+            case "CUSTOMER_WAITING":
+                this.deskX = event.deskX!;
+                this.deskY = event.deskY!;
+                this.currentEventId = id
+                this.drawWaiting(ctx, now);
                 break;
             case "WALK_TO_DESK":
                 this.deskId = event.deskId!;
                 this.deskX = event.deskX!;
                 this.deskY = event.deskY!;
+                this.currentEventId = id
                 this.drawWalkToDesk(ctx);
                 break;
             case "BUY_TICKETS":
                 this.deskId = event.deskId!;
                 this.deskX = event.deskX!;
                 this.deskY = event.deskY!;
+                this.currentEventId = id
                 this.drawBuyTickets(ctx, now);
                 updateChart(this.deskId);
                 break;
-            case "CUSTOMER_WAITING":
-                this.deskX = event.deskX!;
-                this.deskY = event.deskY!;
-                this.drawWaiting(ctx, now);
-                break;
             case "CUSTOMER_LEAVES":
+                this.currentEventId = id
                 this.drawLeaving(ctx, now);
                 break;
         }
@@ -113,22 +143,32 @@ class Person {
         ctx.drawImage(personIcon, Person.START_AT.x, Person.START_AT.y, IMAGE_WIDTH, IMAGE_HEIGHT);
     }
     private drawWalkToDesk(ctx: CanvasRenderingContext2D) {
-        const destX = this.deskX + 20;
-        const destY = this.deskY + 3;
-        const startX = Person.START_AT.x;
-        const startY = Person.START_AT.y;
-        const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
-        const currentTime = Date.now() - startTime;
-        const progress = Math.min(currentTime / duration, 1);
-        const distanceX = destX - startX;
-        const distanceY = destY - startY;
-        const currentX = startX + distanceX * progress;
-        const currentY = startY + distanceY * progress;
-        ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
-        if (progress < 1) {
-            requestAnimationFrame(() => this.drawWalkToDesk(ctx));
-        }
+    let destX = this.deskX + 20;
+    let destY = this.deskY + 3;
+    let startX = Person.START_AT.x;
+    let startY = Person.START_AT.y;
+    // const prevEvent = this.getPreviousEvent();
+    // if (prevEvent && (prevEvent.event == "CUSTOMER_WAITING" || prevEvent.event == "CUSTOMER_LEAVES")) {
+    //     startY += 40;
+    //     destX = this.deskX; // Изменяем конечные координаты, чтобы начать анимацию с позиции ожидания
+    //     destY = this.deskY + 40;
+    // }
+    const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
+    const currentTime = Date.now() - startTime;
+    const progress = Math.min(currentTime / duration, 1);
+    const distanceX = destX - startX;
+    const distanceY = destY - startY;
+    const currentX = startX + distanceX * progress;
+    const currentY = startY + distanceY * progress;
+    ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
+
+    // Вызываем функцию requestAnimationFrame для повторного вызова drawWalkToDesk до завершения анимации
+    if (progress < 1) {
+        requestAnimationFrame(() => this.drawWalkToDesk(ctx));
+    } else {
+        walkToDeskDrawn = true;
     }
+}
 
     private drawBuyTickets(ctx: CanvasRenderingContext2D, now: number) {
         const destX = this.deskX + 20;
@@ -143,6 +183,10 @@ class Person {
         const currentX = startX + distanceX * progress;
         const currentY = startY + distanceY * progress;
         ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
+        // const nextEvent = this.getNextEvent();
+        // if (nextEvent && nextEvent.event == "CUSTOMER_LEAVES") {
+        //     ctx.clearRect(currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
+        // }
         if (progress < 1) {
             requestAnimationFrame(() => this.drawBuyTickets(ctx, now));
         }
@@ -163,34 +207,43 @@ class Person {
     ctx.drawImage(GroupPersonIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
     if (progress < 1) {
         requestAnimationFrame(() => this.drawWaiting(ctx, now));
+    } else {
+        waitingDrawn = true;
     }
-}
 
-    private drawLeaving(ctx: CanvasRenderingContext2D, now: number) {
+}
+    private leavingAnimationStartTime: number | null = null;
+    private leavingAnimationStartX: number = 0;
+    private leavingAnimationStartY: number = 0;
+ private drawLeaving(ctx: CanvasRenderingContext2D, now: number) {
     const destX = canvas.width - IMAGE_WIDTH; // Правый край холста
     const destY = 0; // Верхний край холста
-    const startX = this.deskX;
-    const startY = this.deskY;
-    const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
-    const currentTime = Date.now() - startTime;
-    const progress = Math.min(currentTime / duration, 1);
-    const distanceX = destX - startX;
-    const distanceY = destY - startY;
-    const currentX = startX + distanceX * progress; // Оставляем прогресс без изменений для движения в противоположном направлении
-    const currentY = startY + distanceY * progress;// Инвертируем прогресс для движения от стола к выходу
 
-    globalDesks.forEach((desk) => {
-        desk.draw(ctx);
-    });
-    ctx.fillText(`T = ${now.toFixed(2)} minutes`, 5, 15); // Отрисовываем время
+    if (this.leavingAnimationStartTime === null) {
+        // Сохраняем начальные координаты и время старта анимации
+        this.leavingAnimationStartTime = Date.now();
+        this.leavingAnimationStartX = 300; // Начало анимации слева на краю холста
+        this.leavingAnimationStartY = 180 - IMAGE_HEIGHT;
+    }
+
+    const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
+    const currentTime = Date.now() - this.leavingAnimationStartTime;
+    const progress = Math.min(currentTime / duration, 1);
+    const distanceX = destX - this.leavingAnimationStartX;
+    const distanceY = destY - this.leavingAnimationStartY;
+    const currentX = this.leavingAnimationStartX + distanceX * progress;
+    const currentY = this.leavingAnimationStartY + distanceY * progress;
 
     // Отрисовываем кастомера
     ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
-
     if (progress < 1) {
         requestAnimationFrame(() => this.drawLeaving(ctx, now));
+    } else {
+        // После завершения анимации можно выполнить какие-либо действия, например, удалить объект из списка активных объектов или выполнить другую логику.
+        this.leavingAnimationStartTime = null; // Сбрасываем время старта анимации для последующих вызовов
     }
 }
+
 }
 
 // Глобальная переменная, содержащая массив столов
@@ -298,8 +351,8 @@ const Run = async (sourceFile: string, speed: number) => {
             if (deskId >= 0 && deskId < desks.length) {
                 const deskData = desksData[deskId];
                 const eventWithCoords = { ...event, deskX: deskData.x, deskY: deskData.y };
-                const newPerson = new Person(event.id);
-                newPerson.draw(ctx, now, eventWithCoords);
+                const newPerson = new Person(event.id, events);
+                newPerson.draw(ctx, now, eventWithCoords, event.id);
 
                 // Добавляем идентификатор обработанного события в список
                 processedEvents.push(event.id);
@@ -316,6 +369,27 @@ const Run = async (sourceFile: string, speed: number) => {
     // Проверяем, должны ли мы продолжать анимацию
     if (now < events[events.length - 1].time) {
         requestAnimationFrame(Draw);
+    } else {
+         // Создаем кнопку для скачивания отчета
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        const downloadReportBtn = document.getElementById("downloadReportBtn");
+        downloadReportBtn.style.display = "block";
+        downloadReportBtn.addEventListener("click", function() {
+    // Укажите путь к файлу отчета здесь
+    const reportPath = "report.pdf";
+    // Укажите имя файла отчета здесь
+    const reportName = "report.pdf";
+    // Создаем ссылку для скачивания файла
+    const link = document.createElement("a");
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    link.href = reportPath;
+    link.download = reportName;
+    // Добавляем ссылку на страницу и эмулируем клик для начала загрузки файла
+    document.body.appendChild(link);
+    link.click();
+    // Удаляем ссылку после загрузки файла
+    document.body.removeChild(link);
+});
     }
 };
 

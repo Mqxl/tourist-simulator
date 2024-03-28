@@ -7,9 +7,9 @@ import simpy
 import json
 
 # Configuration
-NUM_DESKS = 6  # Количество столов, где принимают клиентов
-NUM_CUSTOMERS = 50  # Количество покупателей
-DESK_WORK_TIME = 5  # Время работы одного стола на одного клиента в секундах
+NUM_DESKS = 4  # Количество столов, где принимают клиентов
+NUM_CUSTOMERS = 25  # Количество покупателей
+DESK_WORK_TIME = 3  # Время работы одного стола на одного клиента в секундах
 
 if len(sys.argv) > 1:
     # Принимаем аргументы из командной строки
@@ -79,21 +79,25 @@ def customer(env, customer_id, desks):
     register_customer_arrival(env, customer_id)
     desk = pick_shortest(desks)
     desk_id = desks.index(desk) + 1  # Получаем deskId
-
+    walked = False
     with desk.request() as req:
         if len(desk.queue) > 0:  # Если в очереди уже есть клиенты
             register_customer_waiting(env, customer_id, desk_id)
             yield req  # Просто ждем в очереди
         else:  # Если стол свободен
             register_customer_walk_to_desk(customer_id, desk_id)
-            yield req  # Занимаем стол сразу
+            walked = True
+            yield env.timeout(random.uniform(0.5, 2.0))  # Random walking time
+        yield req  # Занимаем стол сразу
+        if not walked:
+            register_customer_walk_to_desk(customer_id, desk_id)
+            yield env.timeout(random.uniform(0.5, 2.0))  # Random walking time
 
-        yield env.timeout(random.uniform(0.5, 2.0))  # Random walking time
 
-        register_customer_buy_tickets(customer_id, desk_id)
         yield env.timeout(DESK_WORK_TIME)  # Use desk work time for service time
 
         yield env.timeout(random.uniform(0.5, 2.0))  # Random time between buying tickets and leaving
+        register_customer_buy_tickets(customer_id, desk_id)
         register_customer_leaves(env, customer_id, desk_id)  # Передаем deskId
 
 # Simulation
