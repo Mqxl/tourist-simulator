@@ -1,4 +1,5 @@
 import random
+import sys
 from collections import defaultdict
 
 import numpy as np
@@ -9,6 +10,12 @@ import json
 NUM_DESKS = 6  # Количество столов, где принимают клиентов
 NUM_CUSTOMERS = 50  # Количество покупателей
 DESK_WORK_TIME = 5  # Время работы одного стола на одного клиента в секундах
+
+if len(sys.argv) > 1:
+    # Принимаем аргументы из командной строки
+    NUM_DESKS = int(sys.argv[1])
+    NUM_CUSTOMERS = int(sys.argv[2])
+    DESK_WORK_TIME = int(sys.argv[3])
 
 # Globals for analytics
 desk_waits = defaultdict(list)
