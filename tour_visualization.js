@@ -1,16 +1,28 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const goButton = document.getElementById("goButton");
 const personIcon = new Image();
-personIcon.src = "images/person-icon.png";
-const IMAGE_WIDTH = 25;
-const IMAGE_HEIGHT = 25;
-const SELLER_WIDTH = 22;
-const SCANNER_WIDTH = 10;
-// Events always take place in this order
+personIcon.src = "images/person-resized.gif";
+const GroupPersonIcon = new Image();
+GroupPersonIcon.src = "images/group.gif";
+const IMAGE_WIDTH = 15;
+const IMAGE_HEIGHT = 15;
+// Вес типов событий для правильной сортировки
 const EventTypeWeight = {
     CUSTOMER_ARRIVAL: 0,
-    WALK_TO_DESK: 1,
-    BUY_TICKETS: 2
+    CUSTOMER_WAITING: 1,
+    WALK_TO_DESK: 2,
+    BUY_TICKETS: 3,
+    CUSTOMER_LEAVES: 4
 };
+// Сортировка и присвоение идентификаторов событиям
 const SortAndInjectSequentialIDs = (events) => {
     events = events.sort((a, b) => (a.time === b.time ? EventTypeWeight[a.event] - EventTypeWeight[b.event] : a.time - b.time));
     let id = 0;
@@ -20,34 +32,31 @@ const SortAndInjectSequentialIDs = (events) => {
 //  CANVAS OBJECTS
 // -------------------------
 class Desk {
-    constructor(id, position) {
+    constructor(id, x, y) {
         this.id = id;
-        this.position = position;
+        this.x = x;
+        this.y = y;
         this.num = 0;
     }
-    getId() {
-        return this.id;
-    }
     draw(ctx) {
-        const width = 50;
+        const width = 70;
         const height = 30;
         ctx.strokeStyle = "black"; // Цвет границы
         ctx.lineWidth = 2; // Толщина
-        ctx.strokeRect(this.position.x, this.position.y, width, height);
+        ctx.strokeRect(this.x, this.y, width, height);
         ctx.fillStyle = "rgba(0, 0, 0, 0)"; // Прозрачный цвет заливки
-        ctx.fillRect(this.position.x, this.position.y, width, height);
+        ctx.fillRect(this.x, this.y, width, height);
         ctx.fillStyle = "black"; // Цвет текста
         ctx.font = "10px Arial"; // Размер и шрифт текста
-        ctx.fillText(`Desk ${this.id}`, this.position.x, this.position.y - 5); // Надпись над столом
+        ctx.fillText(`Desk ${this.id}`, this.x, this.y - 5); // Надпись над столом
     }
 }
 class Person {
     constructor(id) {
         this.id = id;
         this.deskId = null;
-    }
-    get getId() {
-        return this.id;
+        this.deskX = 0;
+        this.deskY = 0;
     }
     draw(ctx, now, event) {
         switch (event.event) {
@@ -56,12 +65,24 @@ class Person {
                 break;
             case "WALK_TO_DESK":
                 this.deskId = event.deskId;
+                this.deskX = event.deskX;
+                this.deskY = event.deskY;
                 this.drawWalkToDesk(ctx);
                 break;
             case "BUY_TICKETS":
                 this.deskId = event.deskId;
+                this.deskX = event.deskX;
+                this.deskY = event.deskY;
                 this.drawBuyTickets(ctx, now);
                 updateChart(this.deskId);
+                break;
+            case "CUSTOMER_WAITING":
+                this.deskX = event.deskX;
+                this.deskY = event.deskY;
+                this.drawWaiting(ctx, now);
+                break;
+            case "CUSTOMER_LEAVES":
+                this.drawLeaving(ctx, now);
                 break;
         }
     }
@@ -69,13 +90,11 @@ class Person {
         ctx.drawImage(personIcon, Person.START_AT.x, Person.START_AT.y, IMAGE_WIDTH, IMAGE_HEIGHT);
     }
     drawWalkToDesk(ctx) {
-        if (this.deskId === null)
-            return;
-        const destX = this.deskId * 200;
-        const destY = 200;
+        const destX = this.deskX + 20;
+        const destY = this.deskY + 3;
         const startX = Person.START_AT.x;
         const startY = Person.START_AT.y;
-        const duration = 5000; // Длительность анимации в миллисекундах (5 секунд)
+        const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
         const currentTime = Date.now() - startTime;
         const progress = Math.min(currentTime / duration, 1);
         const distanceX = destX - startX;
@@ -84,40 +103,63 @@ class Person {
         const currentY = startY + distanceY * progress;
         ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
         if (progress < 1) {
-            // Если анимация не завершена, продолжаем отрисовывать следующие кадры анимации
             requestAnimationFrame(() => this.drawWalkToDesk(ctx));
         }
     }
     drawBuyTickets(ctx, now) {
-        if (this.deskId === null)
-            return;
-        const destX = this.deskId * 200 + 25; // Предположим, что каждый стол находится на расстоянии 200 пикселей друг от друга
-        const destY = 200 + 35; // Предположим, что высота стола 70 пикселей
+        const destX = this.deskX + 20;
+        const destY = this.deskY + 3;
         const startX = Person.START_AT.x;
         const startY = Person.START_AT.y;
-        const duration = 2000; // Длительность анимации покупки в миллисекундах (2 секунды)
-        const progress = Math.min((now - startTime) / duration, 1);
+        const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
+        const currentTime = Date.now() - startTime;
+        const progress = Math.min(currentTime / duration, 1);
         const distanceX = destX - startX;
         const distanceY = destY - startY;
         const currentX = startX + distanceX * progress;
         const currentY = startY + distanceY * progress;
-        // Рисуем иконку денег
-        const moneyIcon = new Image();
-        moneyIcon.src = "4538747.png"; // Путь к изображению иконки денег
-        const moneyIconWidth = 50;
-        const moneyIconHeight = 50;
-        const moneyIconX = currentX - moneyIconWidth / 2;
-        const moneyIconY = currentY - moneyIconHeight / 2;
-        ctx.drawImage(moneyIcon, moneyIconX, moneyIconY, moneyIconWidth, moneyIconHeight);
-        // Рисуем человека
         ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
-        // Если анимация не завершена, продолжаем отрисовывать следующие кадры анимации
         if (progress < 1) {
             requestAnimationFrame(() => this.drawBuyTickets(ctx, now));
         }
-        else {
-            // Если анимация завершена, удаляем человека
-            this.deskId = null;
+    }
+    drawWaiting(ctx, now) {
+        const destX = this.deskX;
+        const destY = this.deskY + 40; // Смещаем вниз на 20 пикселей
+        const startX = Person.START_AT.x;
+        const startY = Person.START_AT.y;
+        const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
+        const currentTime = Date.now() - startTime;
+        const progress = Math.min(currentTime / duration, 1);
+        const distanceX = destX - startX;
+        const distanceY = destY - startY;
+        const currentX = startX + distanceX * progress;
+        const currentY = startY + distanceY * progress;
+        ctx.drawImage(GroupPersonIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
+        if (progress < 1) {
+            requestAnimationFrame(() => this.drawWaiting(ctx, now));
+        }
+    }
+    drawLeaving(ctx, now) {
+        const destX = canvas.width - IMAGE_WIDTH; // Правый край холста
+        const destY = 0; // Верхний край холста
+        const startX = this.deskX;
+        const startY = this.deskY;
+        const duration = 3000; // Длительность анимации в миллисекундах (5 секунд)
+        const currentTime = Date.now() - startTime;
+        const progress = Math.min(currentTime / duration, 1);
+        const distanceX = destX - startX;
+        const distanceY = destY - startY;
+        const currentX = startX + distanceX * progress; // Оставляем прогресс без изменений для движения в противоположном направлении
+        const currentY = startY + distanceY * progress; // Инвертируем прогресс для движения от стола к выходу
+        globalDesks.forEach((desk) => {
+            desk.draw(ctx);
+        });
+        ctx.fillText(`T = ${now.toFixed(2)} minutes`, 5, 15); // Отрисовываем время
+        // Отрисовываем кастомера
+        ctx.drawImage(personIcon, currentX, currentY, IMAGE_WIDTH, IMAGE_HEIGHT);
+        if (progress < 1) {
+            requestAnimationFrame(() => this.drawLeaving(ctx, now));
         }
     }
 }
@@ -127,19 +169,21 @@ let globalDesks = [];
 let chart;
 // Функция для отрисовки графика
 const drawChart = (desks) => {
-    const ctx = document.getElementById("chart");
-    const data = {
-        labels: desks.map((desk, index) => `Desk ${index + 1}`),
-        datasets: [{
-                label: 'Customers served',
-                backgroundColor: 'rgb(255, 99, 132)',
-                borderColor: 'rgb(255, 99, 132)',
-                data: desks.map(desk => desk.num),
-            }]
-    };
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+    const labels = desks.map((desk, index) => `Desk ${index + 1}`);
+    const data = desks.map(desk => desk.num);
     const config = {
         type: 'bar',
-        data: data,
+        data: {
+            labels: labels,
+            datasets: [{
+                    label: 'Customers served',
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: data,
+                }]
+        },
         options: {
             scales: {
                 y: {
@@ -148,27 +192,16 @@ const drawChart = (desks) => {
             }
         }
     };
-    // Проверяем, существует ли уже график
     if (chart) {
-        // Если график существует, обновляем его данные
-        chart.data.labels = data.labels;
-        chart.data.datasets = data.datasets;
-        chart.update();
+        chart.destroy();
     }
-    else {
-        // Если график еще не создан, создаем новый экземпляр
-        chart = new window.Chart(ctx, config);
-    }
+    chart = new window.Chart(ctx, config);
 };
 // Функция для обновления данных графика по deskId
 const updateChart = (deskId) => {
-    // Находим стол по deskId
-    const desk = globalDesks.find(desk => desk.getId() === deskId);
+    const desk = globalDesks.find(desk => desk.id === deskId);
     if (desk) {
-        // Увеличиваем количество клиентов на столе
         desk.num++;
-        console.log(desk.num);
-        // Вызываем функцию для перерисовки графика с обновленными данными
         drawChart(globalDesks);
     }
 };
@@ -176,51 +209,75 @@ const updateChart = (deskId) => {
 //  CANVAS LOGIC
 // -------------------------
 let startTime = 0;
-const walkDuration = 3000; // 3 seconds
-const Run = async (sourceFile, speed) => {
-    const canvas = document.getElementById("animate");
+const canvas = document.getElementById("animate");
+const Run = (sourceFile, speed) => __awaiter(this, void 0, void 0, function* () {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
         console.error("no context?");
         return;
     }
-    const data = (await (await fetch(sourceFile)).json());
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const data = (yield (yield fetch(sourceFile)).json());
     const events = SortAndInjectSequentialIDs(data.events);
     const desksData = data.desks;
     const desks = [];
     for (let i = 0; i < desksData.length; i++) {
         const deskData = desksData[i];
-        const desk = new Desk(i + 1, { x: deskData.x, y: deskData.y });
+        const desk = new Desk(i + 1, deskData.x, deskData.y);
         desks.push(desk);
     }
     globalDesks = desks;
     drawChart(globalDesks);
     const begin = Date.now();
+    let processedEvents = [];
+    let drawnInitial = false;
     const Draw = () => {
         const now = (Date.now() - begin) / 1000 / speed;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        desks.forEach((desk) => {
-            desk.draw(ctx);
-        });
+        // Проверяем, были ли столы и время уже отрисованы
+        if (!drawnInitial) {
+            // Отрисовываем столы
+            desks.forEach((desk) => {
+                desk.draw(ctx);
+            });
+            // Помечаем, что столы и время были отрисованы
+            drawnInitial = true;
+        }
+        // Отрисовываем время
+        ctx.clearRect(0, 0, 200, 20); // Очищаем область, где отображается время
         ctx.fillText(`T = ${now.toFixed(2)} minutes`, 5, 15);
-        const filteredEvents = events.filter(event => event.id !== 0 && event.time <= now);
+        // Обработка каждого события
         events.forEach((event) => {
-            if (event.id === 0)
+            // Проверяем, было ли уже обработано это событие
+            if (processedEvents.indexOf(event.id) !== -1)
                 return;
-            if (event.time <= now) {
-                const newPerson = new Person(event.id);
-                newPerson.draw(ctx, now, event);
+            // Если ивент еще не обработан, то выполняем его обработку
+            if (event.id !== 0 && event.time <= now) {
+                const deskId = event.deskId - 1; // Поправка на индексацию столов, начиная с 0
+                if (deskId >= 0 && deskId < desks.length) {
+                    const deskData = desksData[deskId];
+                    const eventWithCoords = Object.assign(Object.assign({}, event), { deskX: deskData.x, deskY: deskData.y });
+                    const newPerson = new Person(event.id);
+                    newPerson.draw(ctx, now, eventWithCoords);
+                    // Добавляем идентификатор обработанного события в список
+                    processedEvents.push(event.id);
+                }
             }
         });
+        // Проверяем, остались ли еще события для обработки
+        if (events.length === 0) {
+            // Если нет, то останавливаем анимацию
+            return;
+        }
+        // Проверяем, должны ли мы продолжать анимацию
         if (now < events[events.length - 1].time) {
             requestAnimationFrame(Draw);
         }
     };
     startTime = Date.now();
     Draw();
-};
+});
 goButton.addEventListener("click", function () {
-    const file = document.getElementById("file").value;
+    const file = "output/events.json";
     const speed = parseInt(document.getElementById("speed").value, 10);
     Run(file, speed);
 });

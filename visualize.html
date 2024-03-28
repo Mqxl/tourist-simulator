@@ -5,28 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tour Sale Animation</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        #chart, #animate {
+            display: block;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
         .controls {
-            margin-top: 10px;
+            text-align: center;
+            margin-top: 20px;
         }
         .controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .controls button:hover {
+            background-color: #45a049;
+        }
+        .controls label {
+            font-size: 16px;
             margin-right: 10px;
+        }
+        .controls select, .controls input[type="number"] {
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
-    <canvas id="chart" width="200" height="100"></canvas>
-    <canvas id="animate" width="1100" height="800"></canvas>
+    <canvas id="chart" width="1000" height="500"></canvas>
+    <canvas id="animate" width="1000" height="750"></canvas>
     <div class="controls">
         <button id="goButton">Start</button>
-        <label for="file">Select Data File:</label>
-        <select id="file">
-            <option value="data1.json">Data 1</option>
-            <option value="data2.json">Data 2</option>
-        </select>
         <label for="speed">Animation Speed:</label>
         <input type="number" id="speed" min="1" max="10" value="5">
     </div>
     <script src="tour_visualization.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
